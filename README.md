@@ -1,4 +1,4 @@
-<img width="1912" height="906" alt="image" src="https://github.com/user-attachments/assets/487b97c1-8566-4f1a-8bf2-555ff86d8914" /># 求人応募管理アプリ
+##転職求人応募管理アプリ
 
 転職活動中の応募企業、選考状況、面接予定、メモを管理するDjangoアプリです。
 
