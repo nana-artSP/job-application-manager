@@ -1,0 +1,132 @@
+{% extends "companies/base.html" %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h1 class="h4 mb-4">{% if object %}応募先を編集{% else %}応募先を新規登録{% endif %}</h1>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            {% for field in form %}
+              <div class="mb-3 {% if field.name == 'interview_date' or field.name == 'interview_time' or field.name == 'interview_format' %}interview-field d-none{% endif %}">
+                <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.name == "source_url" %}
+                  <div class="input-group">
+                    {{ field }}
+                    <button class="btn btn-outline-primary" id="fetch-url-button" type="button">URLから取得</button>
+                  </div>
+                  <div class="form-text" id="fetch-url-message">求人ページまたは企業HPのURLから、取れる範囲で会社情報を入力します。</div>
+                {% elif field.name == "applied_on" %}
+                  <div class="input-group">
+                    {{ field }}
+                    <button class="btn btn-outline-secondary" id="today-button" type="button">今日</button>
+                  </div>
+                {% elif field.name == "has_interview" %}
+                  <div class="form-check">
+                    {{ field }}
+                    <label class="form-check-label" for="{{ field.id_for_label }}">面接が決まっている場合はチェック</label>
+                  </div>
+                  <div class="form-text">チェックすると、面接日・時間・形式を入力できます。</div>
+                {% elif field.name == "general_memo" %}
+                  <div class="border rounded-2 p-3 bg-light">
+                    {{ field }}
+                    <div class="form-text">これまでのメモは、この通常メモに引き継がれます。</div>
+                  </div>
+                {% elif field.name == "company_memo" or field.name == "interview_memo" or field.name == "reflection_memo" %}
+                  <div class="border rounded-2 p-3 bg-light">
+                    {{ field }}
+                  </div>
+                {% else %}
+                  {{ field }}
+                {% endif %}
+                {% if field.errors %}
+                  <div class="invalid-feedback d-block">{{ field.errors|striptags }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a class="btn btn-outline-secondary" href="{% url 'companies:list' %}">キャンセル</a>
+              <button class="btn btn-primary" type="submit">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fetchButton = document.getElementById("fetch-url-button");
+    const urlInput = document.getElementById("id_source_url");
+    const nameInput = document.getElementById("id_name");
+    const appliedOnInput = document.getElementById("id_applied_on");
+    const memoInput = document.getElementById("id_general_memo");
+    const message = document.getElementById("fetch-url-message");
+    const todayButton = document.getElementById("today-button");
+    const hasInterviewInput = document.getElementById("id_has_interview");
+    const interviewFields = document.querySelectorAll(".interview-field");
+
+    function toggleInterviewFields() {
+      const shouldShow = hasInterviewInput?.checked;
+      interviewFields.forEach((field) => {
+        field.classList.toggle("d-none", !shouldShow);
+      });
+    }
+
+    hasInterviewInput?.addEventListener("change", toggleInterviewFields);
+    toggleInterviewFields();
+
+    todayButton?.addEventListener("click", () => {
+      const today = new Date();
+      const offsetDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+      appliedOnInput.value = offsetDate.toISOString().slice(0, 10);
+    });
+
+    fetchButton?.addEventListener("click", async () => {
+      const url = urlInput.value.trim();
+      if (!url) {
+        message.textContent = "URLを入力してください。";
+        message.className = "form-text text-danger";
+        return;
+      }
+
+      fetchButton.disabled = true;
+      fetchButton.textContent = "取得中...";
+      message.textContent = "ページ情報を取得しています。";
+      message.className = "form-text text-secondary";
+
+      try {
+        const response = await fetch(`{% url 'companies:fetch_url' %}?url=${encodeURIComponent(url)}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "取得に失敗しました。");
+        }
+
+        if (data.name && !nameInput.value.trim()) {
+          nameInput.value = data.name;
+        }
+        if (data.memo) {
+          memoInput.value = memoInput.value.trim()
+            ? `${memoInput.value.trim()}\n\n${data.memo}`
+            : data.memo;
+        }
+        message.textContent = "取得できた情報を入力しました。必要に応じて修正してください。";
+        message.className = "form-text text-success";
+      } catch (error) {
+        message.textContent = error.message;
+        message.className = "form-text text-danger";
+      } finally {
+        fetchButton.disabled = false;
+        fetchButton.textContent = "URLから取得";
+      }
+    });
+  </script>
+{% endblock %}

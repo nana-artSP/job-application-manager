@@ -1,0 +1,201 @@
+{% extends "companies/base.html" %}
+
+{% block content %}
+  <div class="d-flex align-items-start justify-content-between gap-3 mb-4 text-white">
+    <div>
+      <h1 class="h3 mb-1">応募先一覧</h1>
+      <p class="mb-0 opacity-75">選考中の企業を優先して、応募状況を整理します。</p>
+    </div>
+    <a class="btn btn-light text-primary fw-semibold" href="{% url 'companies:create' %}">新規登録</a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg">
+      <div class="card dashboard-card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-secondary small mb-2">すべて</div>
+          <div class="count">{{ total_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg">
+      <div class="card dashboard-card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-secondary small mb-2">選考中</div>
+          <div class="count">{{ active_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg">
+      <div class="card dashboard-card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-secondary small mb-2">面接予定</div>
+          <div class="count">{{ interview_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg">
+      <div class="card dashboard-card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-secondary small mb-2">落ちた・辞退</div>
+          <div class="count">{{ rejected_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg">
+      <div class="card dashboard-card border-0 shadow-sm">
+        <div class="card-body">
+          <div class="text-secondary small mb-2">合格</div>
+          <div class="count">{{ passed_count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if upcoming_interviews %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+          <div>
+            <h2 class="h5 mb-1">直近の面接</h2>
+            <p class="text-secondary small mb-0">今日以降の面接予定を近い順に表示しています。</p>
+          </div>
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:list' %}?tab=interview">面接予定を見る</a>
+        </div>
+        <div class="row g-3">
+          {% for interview in upcoming_interviews %}
+            <div class="col-md-4">
+              <div class="border rounded-2 p-3 h-100">
+                <div class="fw-semibold mb-1">{{ interview.name }}</div>
+                <div class="text-primary fw-semibold small mb-2">{{ interview.interview_schedule_display }}</div>
+                {% if interview.interview_memo %}
+                  <div class="text-secondary small mb-3">{{ interview.interview_memo|truncatechars:70 }}</div>
+                {% endif %}
+                {% include "companies/calendar_menu.html" with company=interview %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <ul class="nav nav-pills status-tabs" aria-label="応募結果タブ">
+        {% for tab in tabs %}
+          <li class="nav-item" role="presentation">
+            <a class="nav-link {% if current_tab == tab.key %}active{% endif %}" href="{% url 'companies:list' %}{% if tab.key != 'all' %}?tab={{ tab.key }}{% endif %}">
+              {{ tab.label }}
+              <span class="ms-1 text-secondary">{{ tab.count }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card-body p-0 border-top">
+      {% if companies %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col" class="ps-4">会社名</th>
+                <th scope="col">応募日</th>
+                <th scope="col">ステータス</th>
+                <th scope="col">結果</th>
+                <th scope="col">メモ</th>
+                <th scope="col" class="text-end pe-4">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for company in companies %}
+                <tr>
+                  <td class="ps-4">
+                    <div class="fw-semibold">{{ company.name }}</div>
+                    {% if company.has_interview %}
+                      <div class="small text-primary fw-semibold mt-1">
+                        面接予定: {{ company.interview_schedule_display }}
+                      </div>
+                      {% if company.interview_date %}
+                        {% include "companies/calendar_menu.html" with company=company button_class="btn btn-sm btn-outline-primary mt-1" %}
+                      {% endif %}
+                    {% endif %}
+                    {% if company.source_url %}
+                      <a class="small text-decoration-none" href="{{ company.source_url }}" target="_blank" rel="noopener">URLを開く</a>
+                    {% endif %}
+                  </td>
+                  <td class="text-secondary">{{ company.applied_on|date:"Y/m/d"|default:"-" }}</td>
+                  <td>
+                    <span class="badge text-bg-secondary">{{ company.get_status_display }}</span>
+                  </td>
+                  <td>
+                    <span class="badge {{ company.result_badge_class }}">{{ company.get_result_display }}</span>
+                  </td>
+                  <td class="text-secondary" style="max-width: 360px;">
+                    {{ company.memo_preview|default:"-"|linebreaksbr|truncatechars:80 }}
+                    <div class="mt-2">
+                      <button
+                        class="btn btn-sm btn-outline-primary"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#memo-{{ company.pk }}"
+                        aria-expanded="false"
+                        aria-controls="memo-{{ company.pk }}"
+                      >
+                        メモを見る
+                      </button>
+                    </div>
+                  </td>
+                  <td class="text-end pe-4">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="操作">
+                      <a class="btn btn-outline-primary" href="{% url 'companies:update' company.pk %}">編集</a>
+                      <a class="btn btn-outline-danger" href="{% url 'companies:delete' company.pk %}">削除</a>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="collapse" id="memo-{{ company.pk }}">
+                  <td colspan="6" class="bg-light px-4 py-3">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <div class="border rounded-2 bg-white p-3 h-100">
+                          <div class="fw-semibold text-primary mb-2">通常メモ</div>
+                          <div class="text-secondary small">{{ company.general_memo|default:"-"|linebreaksbr }}</div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="border rounded-2 bg-white p-3 h-100">
+                          <div class="fw-semibold text-primary mb-2">企業メモ</div>
+                          <div class="text-secondary small">{{ company.company_memo|default:"-"|linebreaksbr }}</div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="border rounded-2 bg-white p-3 h-100">
+                          <div class="fw-semibold text-primary mb-2">面接メモ</div>
+                          <div class="text-secondary small">{{ company.interview_memo|default:"-"|linebreaksbr }}</div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="border rounded-2 bg-white p-3 h-100">
+                          <div class="fw-semibold text-primary mb-2">反省メモ</div>
+                          <div class="text-secondary small">{{ company.reflection_memo|default:"-"|linebreaksbr }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <h2 class="h5 mb-2">{% if total_count %}このタブに応募先はありません{% else %}まだ応募先がありません{% endif %}</h2>
+          <p class="text-secondary mb-4">{% if total_count %}別のタブを開くか、新しい応募先を登録してください。{% else %}最初の会社を登録して、応募状況を整理しましょう。{% endif %}</p>
+          <a class="btn btn-primary" href="{% url 'companies:create' %}">新規登録</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

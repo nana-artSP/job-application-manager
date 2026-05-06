@@ -1,0 +1,24 @@
+<div class="dropdown">
+  <button class="{{ button_class|default:'btn btn-sm btn-primary' }} dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+    カレンダーに追加
+  </button>
+  <ul class="dropdown-menu">
+    {% if company.google_calendar_url %}
+      <li>
+        <a class="dropdown-item" href="{{ company.google_calendar_url }}" target="_blank" rel="noopener">
+          Googleカレンダー
+        </a>
+      </li>
+    {% endif %}
+    <li>
+      <a class="dropdown-item" href="{% url 'companies:interview_calendar' company.pk %}">
+        Outlook / Windowsカレンダー
+      </a>
+    </li>
+    <li>
+      <a class="dropdown-item" href="{% url 'companies:interview_calendar' company.pk %}">
+        Appleカレンダー・その他
+      </a>
+    </li>
+  </ul>
+</div>
