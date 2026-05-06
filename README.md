@@ -1,4 +1,4 @@
-# 求人応募管理アプリ
+<img width="1912" height="906" alt="image" src="https://github.com/user-attachments/assets/487b97c1-8566-4f1a-8bf2-555ff86d8914" /># 求人応募管理アプリ
 
 転職活動中の応募企業、選考状況、面接予定、メモを管理するDjangoアプリです。
 
@@ -25,12 +25,30 @@
 - SQLite
 - Bootstrap
 
-## 工夫した点
+## 工夫した点・学習したこと
 
-- ログインユーザーごとに応募データを分離しました。
-- 選考中や面接予定をタブとダッシュボードで見つけやすくしました。
-- メモを種類別に分け、面接準備や振り返りに使いやすくしました。
-- Googleカレンダー用URLと `.ics` ファイル出力を用意し、外部カレンダーへ予定を追加しやすくしました。
+本アプリではAIツール（Codex）も活用しながら開発を進めました。
+
+ただし生成されたコードをそのまま利用するのではなく、Djangoの Model / Form / View / Template の役割やデータの流れを確認しながら、自分でコードを読み、修正・機能追加・エラー対応を行っています。
+
+特に以下の点を意識して学習・改善を行いました。
+
+- URLから企業情報を取得する処理の理解
+- Django標準認証機能を用いたログイン実装
+- ユーザーごとのデータ管理
+- CRUD処理とフォーム連携
+- エラー発生時の原因調査と修正
+
+## 画面イメージ
+
+### ログイン画面
+<img width="1912" height="906" alt="image" src="https://github.com/user-attachments/assets/0c0b98f9-fbd7-4d39-9d3b-7c39df1e285b" />
+
+### 管理画面一覧
+<img width="1908" height="903" alt="image" src="https://github.com/user-attachments/assets/89f79227-63d3-45a1-a88a-9d1c617a73b2" />
+
+### 新規登録画面
+<img width="1894" height="903" alt="image" src="https://github.com/user-attachments/assets/248c02ed-adf6-4d08-bb31-c3790ba51fda" />
 
 ## セットアップ
 
