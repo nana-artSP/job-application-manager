@@ -45,7 +45,7 @@
 <img width="1912" height="906" alt="image" src="https://github.com/user-attachments/assets/0c0b98f9-fbd7-4d39-9d3b-7c39df1e285b" />
 
 ### 管理画面一覧
-<img width="1908" height="903" alt="image" src="https://github.com/user-attachments/assets/89f79227-63d3-45a1-a88a-9d1c617a73b2" />
+<img width="1913" height="905" alt="image" src="https://github.com/user-attachments/assets/c06bb7e3-31eb-4efa-b5c6-d842c48f166c" />
 
 ### 新規登録画面
 <img width="1894" height="903" alt="image" src="https://github.com/user-attachments/assets/248c02ed-adf6-4d08-bb31-c3790ba51fda" />
