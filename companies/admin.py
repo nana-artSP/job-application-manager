@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Company
+from .models import Company, Task
 
 
 @admin.register(Company)
@@ -25,3 +25,10 @@ class CompanyAdmin(admin.ModelAdmin):
         "reflection_memo",
         "user__username",
     )
+
+
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ("title", "user", "company", "priority", "due_date", "is_completed", "created_at")
+    list_filter = ("priority", "is_completed", "due_date")
+    search_fields = ("title", "description", "company__name", "user__username")

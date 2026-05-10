@@ -1,0 +1,35 @@
+{% extends "companies/base.html" %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h1 class="h4 mb-4">{% if object %}タスクを編集{% else %}タスクを追加{% endif %}</h1>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            {% for field in form %}
+              <div class="mb-3">
+                <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                  <div class="invalid-feedback d-block">{{ field.errors|striptags }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a class="btn btn-outline-secondary" href="{% url 'companies:task_list' %}">キャンセル</a>
+              <button class="btn btn-primary" type="submit">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

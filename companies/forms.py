@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Company
+from .models import Company, Task
 
 
 class CompanyForm(forms.ModelForm):
@@ -36,6 +36,51 @@ class CompanyForm(forms.ModelForm):
             "interview_memo": "面接メモ",
             "reflection_memo": "反省メモ",
         }
+
+
+class TaskForm(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = ["company", "title", "description", "priority", "due_date"]
+        labels = {
+            "company": "企業",
+            "title": "タスク名",
+            "description": "詳細",
+            "priority": "優先度",
+            "due_date": "期限",
+        }
+        widgets = {
+            "company": forms.Select(attrs={"class": "form-select"}),
+            "title": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "例: 面接準備、企業研究、逆質問準備",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 4,
+                    "placeholder": "具体的にやること、準備内容、メモなど",
+                }
+            ),
+            "priority": forms.Select(attrs={"class": "form-select"}),
+            "due_date": forms.DateInput(
+                attrs={
+                    "class": "form-control",
+                    "type": "date",
+                },
+                format="%Y-%m-%d",
+            ),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            # タスク作成時に、ログインユーザー自身の企業だけを選べるようにします。
+            self.fields["company"].queryset = Company.objects.filter(user=user)
+        self.fields["company"].required = False
+        self.fields["company"].empty_label = "企業を選択しない"
         widgets = {
             "source_url": forms.URLInput(
                 attrs={

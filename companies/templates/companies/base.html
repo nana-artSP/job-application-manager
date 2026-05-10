@@ -90,6 +90,7 @@
         <div class="ms-auto d-flex align-items-center gap-2">
           {% if user.is_authenticated %}
             <span class="text-secondary small">{{ user.username }}</span>
+            <a class="btn btn-outline-primary" href="{% url 'companies:task_list' %}">タスク</a>
             <a class="btn btn-primary" href="{% url 'companies:create' %}">新規登録</a>
             <form method="post" action="{% url 'logout' %}">
               {% csrf_token %}

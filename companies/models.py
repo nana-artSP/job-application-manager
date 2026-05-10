@@ -157,3 +157,60 @@ class Company(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Task(models.Model):
+    class Priority(models.TextChoices):
+        HIGH = "high", "高"
+        MEDIUM = "medium", "中"
+        LOW = "low", "低"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tasks",
+        verbose_name="ユーザー",
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.SET_NULL,
+        related_name="tasks",
+        verbose_name="企業",
+        null=True,
+        blank=True,
+    )
+    title = models.CharField("タスク名", max_length=120)
+    description = models.TextField("詳細", blank=True)
+    priority = models.CharField(
+        "優先度",
+        max_length=10,
+        choices=Priority.choices,
+        default=Priority.MEDIUM,
+    )
+    due_date = models.DateField("期限", null=True, blank=True)
+    is_completed = models.BooleanField("完了", default=False)
+    created_at = models.DateTimeField("作成日時", auto_now_add=True)
+
+    class Meta:
+        ordering = ["is_completed", "due_date", "-created_at"]
+        verbose_name = "タスク"
+        verbose_name_plural = "タスク"
+
+    @property
+    def priority_badge_class(self):
+        if self.priority == self.Priority.HIGH:
+            return "text-bg-danger"
+        if self.priority == self.Priority.LOW:
+            return "text-bg-secondary"
+        return "text-bg-primary"
+
+    @property
+    def is_overdue(self):
+        return bool(
+            self.due_date
+            and not self.is_completed
+            and self.due_date < timezone.localdate()
+        )
+
+    def __str__(self):
+        return self.title

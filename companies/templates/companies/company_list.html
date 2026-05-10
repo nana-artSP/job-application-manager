@@ -52,33 +52,90 @@
     </div>
   </div>
 
-  {% if upcoming_interviews %}
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
-          <div>
-            <h2 class="h5 mb-1">直近の面接</h2>
-            <p class="text-secondary small mb-0">今日以降の面接予定を近い順に表示しています。</p>
-          </div>
-          <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:list' %}?tab=interview">面接予定を見る</a>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+        <div>
+          <h2 class="h5 mb-1">今何を優先？</h2>
+          <p class="text-secondary small mb-0">高優先度・期限・面接予定から、次に動くべきことを整理します。</p>
         </div>
-        <div class="row g-3">
-          {% for interview in upcoming_interviews %}
-            <div class="col-md-4">
-              <div class="border rounded-2 p-3 h-100">
-                <div class="fw-semibold mb-1">{{ interview.name }}</div>
-                <div class="text-primary fw-semibold small mb-2">{{ interview.interview_schedule_display }}</div>
-                {% if interview.interview_memo %}
-                  <div class="text-secondary small mb-3">{{ interview.interview_memo|truncatechars:70 }}</div>
-                {% endif %}
-                {% include "companies/calendar_menu.html" with company=interview %}
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:task_list' %}">タスク一覧</a>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="border rounded-2 p-3 h-100">
+            <div class="fw-semibold text-primary mb-3">優先タスク</div>
+            {% if priority_tasks %}
+              <div class="d-flex flex-column gap-3">
+                {% for task in priority_tasks %}
+                  <div>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="fw-semibold">{{ task.title }}</span>
+                      <span class="badge {{ task.priority_badge_class }}">{{ task.get_priority_display }}</span>
+                    </div>
+                    <div class="small {% if task.is_overdue %}text-danger fw-semibold{% else %}text-secondary{% endif %}">
+                      期限: {{ task.due_date|date:"Y/m/d"|default:"未設定" }}
+                      {% if task.is_overdue %}（期限切れ）{% endif %}
+                    </div>
+                    {% if task.company %}
+                      <div class="small text-secondary">{{ task.company.name }}</div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
               </div>
-            </div>
-          {% endfor %}
+            {% else %}
+              <p class="text-secondary small mb-3">未完了タスクはありません。</p>
+              <a class="btn btn-sm btn-primary" href="{% url 'companies:task_create' %}">タスク追加</a>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="border rounded-2 p-3 h-100">
+            <div class="fw-semibold text-primary mb-3">直近の面接</div>
+            {% if upcoming_interviews %}
+              <div class="d-flex flex-column gap-3">
+                {% for interview in upcoming_interviews %}
+                  <div>
+                    <div class="fw-semibold">{{ interview.name }}</div>
+                    <div class="small text-primary fw-semibold">{{ interview.interview_schedule_display }}</div>
+                    {% include "companies/calendar_menu.html" with company=interview button_class="btn btn-sm btn-outline-primary mt-2" %}
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-secondary small mb-0">今日以降の面接予定はありません。</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="border rounded-2 p-3 h-100">
+            <div class="fw-semibold text-primary mb-3">未対応項目</div>
+            {% if unresolved_companies or interview_without_schedule %}
+              <div class="d-flex flex-column gap-3">
+                {% for company in unresolved_companies %}
+                  <div>
+                    <div class="fw-semibold">{{ company.name }}</div>
+                    <div class="small text-secondary">応募済み・選考中のままです。結果や次の対応を確認してください。</div>
+                  </div>
+                {% endfor %}
+                {% for company in interview_without_schedule %}
+                  <div>
+                    <div class="fw-semibold">{{ company.name }}</div>
+                    <div class="small text-secondary">ステータスは面接ですが、面接予定が未設定です。</div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-secondary small mb-0">目立った未対応項目はありません。</p>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>
-  {% endif %}
+  </div>
 
   <div class="card border-0 shadow-sm">
     <div class="card-body">

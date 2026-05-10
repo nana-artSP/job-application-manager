@@ -14,10 +14,11 @@ from django.http import HttpResponse, JsonResponse
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.decorators.http import require_GET
-from django.views.generic import CreateView, DeleteView, FormView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, FormView, ListView, UpdateView, View
+from django.shortcuts import get_object_or_404, redirect
 
-from .forms import CompanyForm
-from .models import Company
+from .forms import CompanyForm, TaskForm
+from .models import Company, Task
 
 
 def escape_ics_text(value):
@@ -33,6 +34,29 @@ def escape_ics_text(value):
 
 def format_ics_datetime(value):
     return timezone.localtime(value).strftime("%Y%m%dT%H%M%S")
+
+
+def order_tasks_by_priority(queryset):
+    # ダッシュボードの優先順位:
+    # 1. 未完了、2. 高優先度、3. 期限が近い順、4. 新しい順
+    return queryset.annotate(
+        completion_order=Case(
+            When(is_completed=False, then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        ),
+        priority_order=Case(
+            When(priority=Task.Priority.HIGH, then=Value(0)),
+            When(priority=Task.Priority.MEDIUM, then=Value(1)),
+            default=Value(2),
+            output_field=IntegerField(),
+        ),
+        due_order=Case(
+            When(due_date__isnull=False, then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        ),
+    ).order_by("completion_order", "priority_order", "due_order", "due_date", "-created_at")
 
 
 class CompanyPageParser(HTMLParser):
@@ -225,6 +249,17 @@ class CompanyListView(LoginRequiredMixin, ListView):
             has_interview=True,
             interview_date__gte=timezone.localdate(),
         ).order_by("interview_date", "interview_time", "created_at")[:3]
+        priority_tasks = order_tasks_by_priority(
+            Task.objects.filter(user=self.request.user, is_completed=False).select_related("company")
+        )[:5]
+        unresolved_companies = base_queryset.filter(
+            status=Company.Status.APPLIED,
+            result=Company.Result.IN_PROGRESS,
+        )[:5]
+        interview_without_schedule = base_queryset.filter(
+            status=Company.Status.INTERVIEW,
+            has_interview=False,
+        )[:5]
         rejected_count = base_queryset.filter(result__in=self.tab_filters["rejected"]).count()
         passed_count = base_queryset.filter(result=Company.Result.PASSED).count()
         context.update(
@@ -234,6 +269,9 @@ class CompanyListView(LoginRequiredMixin, ListView):
                 "active_count": active_count,
                 "interview_count": interview_count,
                 "upcoming_interviews": upcoming_interviews,
+                "priority_tasks": priority_tasks,
+                "unresolved_companies": unresolved_companies,
+                "interview_without_schedule": interview_without_schedule,
                 "rejected_count": rejected_count,
                 "passed_count": passed_count,
                 "tabs": [
@@ -246,6 +284,65 @@ class CompanyListView(LoginRequiredMixin, ListView):
             }
         )
         return context
+
+
+class TaskQuerysetMixin(LoginRequiredMixin):
+    model = Task
+
+    def get_queryset(self):
+        # 他ユーザーのタスクを閲覧・編集・削除できないように、常にログインユーザーで絞ります。
+        return Task.objects.filter(user=self.request.user).select_related("company")
+
+
+class TaskListView(TaskQuerysetMixin, ListView):
+    context_object_name = "tasks"
+    template_name = "tasks/task_list.html"
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return order_tasks_by_priority(queryset)
+
+
+class TaskCreateView(LoginRequiredMixin, CreateView):
+    model = Task
+    form_class = TaskForm
+    template_name = "tasks/task_form.html"
+    success_url = reverse_lazy("companies:task_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        # ここでログインユーザーとタスクを紐付けます。
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+
+class TaskUpdateView(TaskQuerysetMixin, UpdateView):
+    form_class = TaskForm
+    template_name = "tasks/task_form.html"
+    success_url = reverse_lazy("companies:task_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+
+class TaskDeleteView(TaskQuerysetMixin, DeleteView):
+    template_name = "tasks/task_confirm_delete.html"
+    success_url = reverse_lazy("companies:task_list")
+
+
+class TaskToggleCompleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        # 完了切り替えも他ユーザーのタスクを対象にできないようにします。
+        task = get_object_or_404(Task, pk=pk, user=request.user)
+        task.is_completed = not task.is_completed
+        task.save(update_fields=["is_completed"])
+        return redirect(request.POST.get("next") or reverse_lazy("companies:task_list"))
 
 
 class CompanyCreateView(LoginRequiredMixin, CreateView):
